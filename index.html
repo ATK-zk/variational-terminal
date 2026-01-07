@@ -53,12 +53,29 @@
           const [inputMax, setInputMax] = useState(1000000);
           const [activeRange, setActiveRange] = useState({ min: 100000, max: 1000000 });
 
+          const updatePriceHistory = (listings) => {
+            const now = Date.now();
+            const dayInMs = 24 * 60 * 60 * 1000;
+            const history = JSON.parse(localStorage.getItem('alpha_price_history') || '{}');
+            
+            listings.forEach(l => {
+                if (!history[l.ticker]) history[l.ticker] = [];
+                history[l.ticker].push({ p: parseFloat(l.mark_price), t: now });
+                history[l.ticker] = history[l.ticker].filter(record => (now - record.t) < dayInMs);
+            });
+            
+            localStorage.setItem('alpha_price_history', JSON.stringify(history));
+            return history;
+          };
+
           const fetchData = async () => {
             setLoading(true);
             try {
               const resp = await fetch("https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/stats");
               const json = await resp.json();
-              setRawListings(json.listings || []);
+              const listings = json.listings || [];
+              updatePriceHistory(listings);
+              setRawListings(listings);
               setLastUpdate(new Date());
             } catch (e) { console.error(e); }
             setLoading(false);
@@ -75,28 +92,48 @@
           };
 
           const processedData = useMemo(() => {
+            const history = JSON.parse(localStorage.getItem('alpha_price_history') || '{}');
+            
             const filteredByVol = rawListings.map(l => {
               const v = parseFloat(l.volume_24h || 0);
               const l_oi = parseFloat(l.open_interest?.long_open_interest || 0);
               const s_oi = parseFloat(l.open_interest?.short_open_interest || 0);
               const t_oi = l_oi + s_oi;
+              
+              const tickerHistory = history[l.ticker] || [];
+              const currentPrice = parseFloat(l.mark_price || 0);
+              const oldestPrice = tickerHistory.length > 0 ? tickerHistory[0].p : currentPrice;
+              
+              const priceDiff = currentPrice - oldestPrice;
+              const pricePct = oldestPrice !== 0 ? (priceDiff / oldestPrice) * 100 : 0;
+              const absPricePct = Math.abs(pricePct) || 0.01; 
+              
+              const activity = t_oi > 0 ? v / t_oi : 0;
+              const alphaScore = (activity / absPricePct) * 100;
+
               return {
                 ticker: l.ticker,
                 vol: v,
                 l_oi, s_oi, t_oi,
                 ls_ratio: s_oi > 0 ? l_oi / s_oi : 0,
                 sl_ratio: l_oi > 0 ? s_oi / l_oi : 0,
-                activity: t_oi > 0 ? v / t_oi : 0
+                activity,
+                alphaScore,
+                pricePct,
+                currentPrice
               };
             }).filter(i => i.vol >= activeRange.min && i.vol <= activeRange.max);
 
-            const top20ByActivity = [...filteredByVol]
-                .sort((a, b) => b.activity - a.activity)
-                .slice(0, 20);
+            // 1. Sort All by Alpha Score and assign Global Rank
+            const top20ByAlpha = [...filteredByVol]
+                .sort((a, b) => b.alphaScore - a.alphaScore)
+                .slice(0, 20)
+                .map((item, index) => ({ ...item, globalAlphaRank: index + 1 }));
 
+            // 2. Separate and sort for UI
             return {
-              bullish: [...top20ByActivity].sort((a,b) => b.ls_ratio - a.ls_ratio).slice(0, 5),
-              bearish: [...top20ByActivity].sort((a,b) => b.sl_ratio - a.sl_ratio).slice(0, 5)
+              bullish: [...top20ByAlpha].sort((a,b) => b.ls_ratio - a.ls_ratio).slice(0, 5),
+              bearish: [...top20ByAlpha].sort((a,b) => b.sl_ratio - a.sl_ratio).slice(0, 5)
             };
           }, [rawListings, activeRange]);
 
@@ -151,9 +188,7 @@
               </div>
 
               <div className="grid lg:grid-cols-2 gap-10">
-                {/* เปลี่ยน Bullish เป็นโหมด Bear (สีแดง) และหัวข้อ SHORT */}
                 <DataSection title="SHORT" data={processedData.bullish} mode="bear" />
-                {/* เปลี่ยน Bearish เป็นโหมด Bull (สีเขียว) และหัวข้อ LONG */}
                 <DataSection title="LONG" data={processedData.bearish} mode="bull" />
               </div>
             </div>
@@ -170,7 +205,6 @@
             {data.length === 0 ? (
                 <div className="glass rounded-xl p-10 text-center text-slate-500 italic border-dashed border-2 border-slate-800">No assets detected in range.</div>
             ) : data.map((item, idx) => {
-              // คำนวณ ratio ตามหัวข้อ: ถ้า SHORT (mode bear) ใช้ ls_ratio, ถ้า LONG (mode bull) ใช้ sl_ratio
               const mainRatio = title === 'SHORT' ? item.ls_ratio : item.sl_ratio;
               const dominance = title === 'SHORT' 
                 ? (item.l_oi / item.t_oi * 100) 
@@ -182,7 +216,7 @@
                     className={`glass rounded-xl p-6 card-hover transition-all group relative overflow-hidden ${mode === 'bull' ? 'neon-border-green card-hover-green' : 'neon-border-red card-hover-red'}`}
                 >
                   <div className={`absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.12] transition-opacity pointer-events-none`}>
-                    <span className="text-8xl font-black italic">#{idx+1}</span>
+                    <span className="text-8xl font-black italic">#{item.globalAlphaRank}</span>
                   </div>
 
                   <div className="flex justify-between items-start relative z-10">
@@ -190,11 +224,14 @@
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-3xl font-black tracking-tighter text-white group-hover:text-indigo-200 transition-colors">{item.ticker}</span>
                         <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-slate-400 border border-white/5">
-                            VOLUME/OI: {item.activity.toFixed(2)}
+                            ALPHA SCORE: {item.alphaScore.toFixed(0)}
                         </div>
                       </div>
-                      <div className="text-[11px] font-bold">
-                        <span className="text-slate-500 uppercase italic tracking-widest">24H Volume: <span className="text-slate-200 mono not-italic">${item.vol.toLocaleString()}</span></span>
+                      <div className="text-[11px] font-bold flex gap-3">
+                        <span className="text-slate-500 uppercase italic tracking-widest">Price: <span className="text-slate-200 mono not-italic">${item.currentPrice.toLocaleString()}</span></span>
+                        <span className={`mono ${item.pricePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {item.pricePct >= 0 ? '↑' : '↓'} {Math.abs(item.pricePct).toFixed(2)}%
+                        </span>
                       </div>
                     </div>
 
