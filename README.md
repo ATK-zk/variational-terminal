@@ -2,9 +2,7 @@
 
 **Variational Alpha Terminal** is a real-time dashboard designed to extract market alpha by analyzing ticker statistics directly from the Variational API. This terminal specializes in identifying market extremes and sentiment imbalances in the crypto derivatives market.
 
-![Status](https://img.shields.io/badge/Status-Live-emerald?style=for-the-badge)
-![Tech](https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react)
-![UI](https://img.shields.io/badge/Tailwind-CSS-38bdf8?style=for-the-badge&logo=tailwind-css)
+
 
 ## 🚀 Key Features
 - **Inverse Sentiment Strategy**: Purpose-built for contrarian traders.
