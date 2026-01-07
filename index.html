@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Variational Alpha Terminal (6H Mode)</title>
+    <title>Variational Alpha Terminal</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -153,7 +153,7 @@
                     <h1 className="text-4xl font-extrabold tracking-tighter uppercase text-gradient mb-2">
                         Variational Alpha Terminal
                     </h1>
-                    <p className="text-slate-400 font-medium italic">Top 10 Tickers Stream (6H Sentiment)</p>
+                    <p className="text-slate-400 font-medium italic">Top 10 Tickers Stream</p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -239,7 +239,7 @@
                       <div className="text-[11px] font-bold flex gap-3">
                         <span className="text-slate-500 uppercase italic tracking-widest">Price: <span className="text-slate-200 mono not-italic">${item.currentPrice.toLocaleString()}</span></span>
                         <span className={`mono ${item.pricePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {item.pricePct >= 0 ? '↑' : '↓'} {Math.abs(item.pricePct).toFixed(2)}% (6h)
+                            {item.pricePct >= 0 ? '↑' : '↓'} {Math.abs(item.pricePct).toFixed(2)}%
                         </span>
                       </div>
                     </div>
