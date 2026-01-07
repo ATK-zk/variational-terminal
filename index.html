@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Variational Alpha Terminal</title>
+    <title>Variational Alpha Terminal (6H Mode)</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -55,13 +55,24 @@
 
           const updatePriceHistory = (listings) => {
             const now = Date.now();
-            const dayInMs = 24 * 60 * 60 * 1000;
+            const sixHoursInMs = 6 * 60 * 60 * 1000;
             const history = JSON.parse(localStorage.getItem('alpha_price_history') || '{}');
-            
+            const currentMinute = new Date(now).getMinutes();
+            const shouldSavePrice = currentMinute % 3 === 0;
+
             listings.forEach(l => {
                 if (!history[l.ticker]) history[l.ticker] = [];
-                history[l.ticker].push({ p: parseFloat(l.mark_price), t: now });
-                history[l.ticker] = history[l.ticker].filter(record => (now - record.t) < dayInMs);
+                
+                if (shouldSavePrice) {
+                    const lastEntry = history[l.ticker][history[l.ticker].length - 1];
+                    const lastEntryMin = lastEntry ? new Date(lastEntry.t).getMinutes() : -1;
+                    
+                    if (lastEntryMin !== currentMinute) {
+                        history[l.ticker].push({ p: parseFloat(l.mark_price), t: now });
+                    }
+                }
+                
+                history[l.ticker] = history[l.ticker].filter(record => (now - record.t) < sixHoursInMs);
             });
             
             localStorage.setItem('alpha_price_history', JSON.stringify(history));
@@ -83,7 +94,7 @@
 
           useEffect(() => {
             fetchData();
-            const itv = setInterval(fetchData, 45000);
+            const itv = setInterval(fetchData, 60000);
             return () => clearInterval(itv);
           }, []);
 
@@ -124,13 +135,11 @@
               };
             }).filter(i => i.vol >= activeRange.min && i.vol <= activeRange.max);
 
-            // 1. Sort All by Alpha Score and assign Global Rank
             const top20ByAlpha = [...filteredByVol]
                 .sort((a, b) => b.alphaScore - a.alphaScore)
                 .slice(0, 20)
                 .map((item, index) => ({ ...item, globalAlphaRank: index + 1 }));
 
-            // 2. Separate and sort for UI
             return {
               bullish: [...top20ByAlpha].sort((a,b) => b.ls_ratio - a.ls_ratio).slice(0, 5),
               bearish: [...top20ByAlpha].sort((a,b) => b.sl_ratio - a.sl_ratio).slice(0, 5)
@@ -144,7 +153,7 @@
                     <h1 className="text-4xl font-extrabold tracking-tighter uppercase text-gradient mb-2">
                         Variational Alpha Terminal
                     </h1>
-                    <p className="text-slate-400 font-medium italic">Top 10 Tickers Stream</p>
+                    <p className="text-slate-400 font-medium italic">Top 10 Tickers Stream (6H Sentiment)</p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -182,8 +191,8 @@
                 </button>
                 
                 <div className="ml-auto text-right hidden xl:block">
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">STATUS</div>
-                    <div className="text-green-400 font-bold text-sm mono uppercase animate-pulse">ACTIVE</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">TIMEFRAME</div>
+                    <div className="text-green-400 font-bold text-sm mono uppercase animate-pulse">6 HOURS ACTIVE</div>
                 </div>
               </div>
 
@@ -230,7 +239,7 @@
                       <div className="text-[11px] font-bold flex gap-3">
                         <span className="text-slate-500 uppercase italic tracking-widest">Price: <span className="text-slate-200 mono not-italic">${item.currentPrice.toLocaleString()}</span></span>
                         <span className={`mono ${item.pricePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {item.pricePct >= 0 ? '↑' : '↓'} {Math.abs(item.pricePct).toFixed(2)}%
+                            {item.pricePct >= 0 ? '↑' : '↓'} {Math.abs(item.pricePct).toFixed(2)}% (6h)
                         </span>
                       </div>
                     </div>
