@@ -1,43 +1,43 @@
-# 🛡️ Variational Alpha Terminal
+# Variational Alpha Terminal
 
-**Variational Alpha Terminal** is a real-time dashboard designed to extract market alpha by analyzing ticker statistics directly from the Variational API. This terminal specializes in identifying market extremes and sentiment imbalances in the crypto derivatives market.
+**Variational Alpha Terminal** is a high-fidelity, real-time trading dashboard designed to extract market alpha. By analyzing live ticker statistics from the Variational API, it identifies market inefficiencies through a proprietary Alpha Scoring system that combines Open Interest (OI) and Bid-Ask Spreads.
 
+## Key Features
 
+- **Alpha Scoring Engine**: Automatically calculates asset efficiency. High scores indicate tickers with low liquidity (wide spreads) relative to their open interest—prime targets for market-making or contrarian strategies.
 
-## 🚀 Key Features
-- **Inverse Sentiment Strategy**: Purpose-built for contrarian traders.
-  - 🔴 **SHORT (Bullish Data)**: Highlights assets with high Long/Short ratios (overcrowded longs).
-  - 🟢 **LONG (Bearish Data)**: Highlights assets with high Short/Long ratios (overcrowded shorts).
-- **Smart Volume Filtering**: Custom range controls to filter between high-cap stability and low-cap volatility.
-- **Activity Metrics**: Real-time calculation of Volume/Open Interest (OI) ratio to detect unusual trading intensity.
-- **Live Sync**: Automated data fetching every 45 seconds to ensure you stay ahead of the curve.
+- **Smart Liquidity Filtering**: Real-time volume range controls to filter between institutional-grade liquidity and high-volatility "hot money."
 
-## 🛠️ Tech Stack
-- **Frontend**: React 18 (via CDN for lightweight deployment)
-- **Styling**: Tailwind CSS with Glassmorphism UI effects
-- **Typography**: JetBrains Mono (Data) & Plus Jakarta Sans (Interface)
-- **Data Connectivity**: Variational Production API
+- **Visual Intensity Bars**: Instant visual recognition of market heat via dynamic progress bars and radial glow effects.
+
+- **Live Protocol Sync**: Automated data fetching every 30 seconds with a visual "Flash Update" notification upon successful sync.
+
+## Tech Stack
+
+- **Engine**: React 18 (Lightweight CDN deployment)
+
+- **Styling**: Tailwind CSS with custom Utility-First animations
+
+- **Connectivity**: Native Variational Production API Integration.
 
 ## 📂 Quick Start
 1. **Clone the repository**:
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/variational-alpha-terminal.git](https://github.com/YOUR_USERNAME/variational-alpha-terminal.git)  
+   git clone [https://github.com/ATK-zk/variational-alpha-terminal.git](https://github.com/ATK-zk/variational-alpha-terminal.git)  
 2. **Launch**:
    Simply open index.html in any modern web browser.
 3. **Deployment**:
    This project is optimized for GitHub Pages or Vercel. Just upload the index.html and it's ready to go.
 
 ## ⚙️ How to Use
-- **Set Volume Range**: Define the liquidity profile you want to monitor (e.g., $100k to $10M).
-- **Monitor Dominance**: Watch the "Dominance Power" bar. When one side exceeds 70-80%, the probability of a reversal typically increases.
-- **Track Activity**: A higher Activity score relative to peers indicates a ticker is currently the "hot money" focus.
-- **Disclaimer**: This terminal is a data visualization tool. The information provided does not constitute financial advice. Trading cryptocurrency involves significant risk.
+
+- **Set Volume**: Use the Min/Max Vol inputs to define your trading universe (e.g., $500k to $20M).
+
+- **Identify Efficiency**: Look for tickers with an Alpha Score above 100. These are currently experiencing high "Trading Intensity" relative to their spread.
 
 ## ⚖️ License
 This project is licensed under the **MIT License**.
 
-Copyright (c) 2024 [ATK-zk]
+Copyright (c) 2024-2026 [ATK-zk]
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+Disclaimer: This terminal is a data visualization tool. The information provided does not constitute financial advice. Trading cryptocurrency involves significant risk. The Alpha Score is a mathematical derivative and not a guaranteed indicator of price action.
