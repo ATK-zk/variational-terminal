@@ -20,7 +20,7 @@
 
 - **Connectivity**: Native Variational Production API Integration.
 
-## 📂 Quick Start
+## Quick Start
 1. **Clone the repository**:
    ```bash
    git clone [https://github.com/ATK-zk/variational-alpha-terminal.git](https://github.com/ATK-zk/variational-alpha-terminal.git)  
@@ -29,13 +29,13 @@
 3. **Deployment**:
    This project is optimized for GitHub Pages or Vercel. Just upload the index.html and it's ready to go.
 
-## ⚙️ How to Use
+## How to Use
 
 - **Set Volume**: Use the Min/Max Vol inputs to define your trading universe (e.g., $500k to $20M).
 
 - **Identify Efficiency**: Look for tickers with an Alpha Score above 100. These are currently experiencing high "Trading Intensity" relative to their spread.
 
-## ⚖️ License
+## License
 This project is licensed under the **MIT License**.
 
 Copyright (c) 2024-2026 [ATK-zk]
