@@ -6,7 +6,7 @@
 
 - **Alpha Scoring Engine**: Automatically calculates asset efficiency. High scores indicate tickers with low liquidity (wide spreads) relative to their open interest—prime targets for market-making or contrarian strategies.
 
-- **Smart Liquidity Filtering**: Real-time volume range controls to filter between institutional-grade liquidity and high-volatility "hot money."
+- **Smart Liquidity Filtering**: Real-time volume range controls to filter.
 
 - **Visual Intensity Bars**: Instant visual recognition of market heat via dynamic progress bars and radial glow effects.
 
