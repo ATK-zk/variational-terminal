@@ -83,8 +83,9 @@
           const [loading, setLoading] = useState(true);
           const [lastUpdate, setLastUpdate] = useState(null);
           const [flash, setFlash] = useState(false);
-          const [inputMin, setInputMin] = useState(100000);
+          const [inputMin, setInputMin] = useState(100);
           const [inputMax, setInputMax] = useState(10000000);
+          const [searchTerm, setSearchTerm] = useState("");
           const [activeRange, setActiveRange] = useState({ min: inputMin, max: inputMax });
 
           const fetchData = async () => {
@@ -117,13 +118,17 @@
                 const alphaScore = (oi > 0 && spread > 0) ? (1 / (oi * spread)) * 1000000 : 0;
                 return { ticker: l.ticker, vol, oi, spread, price, alphaScore };
               })
-              .filter(i => i.vol >= activeRange.min && i.vol <= activeRange.max)
+              .filter(i => 
+                i.vol >= activeRange.min && 
+                i.vol <= activeRange.max &&
+                i.ticker.toLowerCase().includes(searchTerm.toLowerCase())
+              )
               .sort((a, b) => b.alphaScore - a.alphaScore)
               .slice(0, 10);
 
             const maxAlpha = data.length > 0 ? data[0].alphaScore : 1;
             return data.map(item => ({...item, intensity: (item.alphaScore / maxAlpha) * 100}));
-          }, [rawListings, activeRange]);
+          }, [rawListings, activeRange, searchTerm]);
 
           const getScoreColor = (intensity) => {
               if (intensity > 80) return "text-cyan-400";
@@ -132,17 +137,17 @@
           };
 
           return (
-            <div className="max-w-[1100px] mx-auto p-6 md:p-12">
-              <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-16 border-b border-white/5 pb-8">
+            <div className="max-w-[1100px] mx-auto p-4 md:p-12">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 border-b border-white/5 pb-8">
                 <div className="title-container cursor-default transition-transform duration-300">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-2 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-                        <h1 className="text-5xl font-extrabold tracking-tighter uppercase text-gradient-custom">Variational Alpha Terminal</h1>
+                        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter uppercase text-gradient-custom">Variational Alpha Terminal</h1>
                     </div>
-                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.4em] ml-5">Top 10 Ranking by Spread & Open Interest</p>
+                    <p className="text-slate-500 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.4em] ml-5">Top 10 Ranking by Spread & Open Interest</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-lg border border-white/5 hover:border-indigo-500/30 transition-all">
+                <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+                  <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-lg border border-white/5 hover:border-indigo-500/30 transition-all w-full md:w-auto justify-between md:justify-end">
                     {lastUpdate && <span className="text-[10px] mono text-indigo-400 font-bold px-2 uppercase tracking-widest">Update: {lastUpdate.toLocaleTimeString()}</span>}
                     <button onClick={fetchData} className={`p-1.5 hover:text-indigo-400 hover:bg-white/5 rounded transition-all ${loading ? 'animate-spin text-indigo-400' : 'text-slate-400'}`}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -152,24 +157,28 @@
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-                <div className="md:col-span-3 glass rounded-xl p-4 flex flex-wrap items-center gap-8 relative overflow-hidden shadow-inner">
+                <div className="md:col-span-3 glass rounded-xl p-4 flex flex-wrap items-center gap-4 md:gap-8 relative overflow-hidden shadow-inner">
                     <div className="scanline"></div>
-                    <div className="flex flex-col filter-field px-2 py-1 rounded">
-                        <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Min Vol (USD)</label>
-                        <input type="number" value={inputMin} onChange={e => setInputMin(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-32 transition-colors" />
+                    <div className="flex flex-col filter-field px-2 py-1 rounded w-full md:w-auto">
+                        <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Search</label>
+                        <input type="text" placeholder="" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 placeholder:text-slate-700 transition-colors uppercase" />
                     </div>
-                    <div className="flex flex-col filter-field px-2 py-1 rounded">
+                    <div className="flex flex-col filter-field px-2 py-1 rounded w-[45%] md:w-auto">
+                        <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Min Vol (USD)</label>
+                        <input type="number" value={inputMin} onChange={e => setInputMin(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 transition-colors" />
+                    </div>
+                    <div className="flex flex-col filter-field px-2 py-1 rounded w-[45%] md:w-auto">
                         <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Max Vol (USD)</label>
-                        <input type="number" value={inputMax} onChange={e => setInputMax(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-32 transition-colors" />
+                        <input type="number" value={inputMax} onChange={e => setInputMax(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 transition-colors" />
                     </div>
                     <button 
                         onClick={() => setActiveRange({ min: inputMin, max: inputMax })} 
-                        className="ml-auto bg-white text-black font-black text-[10px] px-8 py-3.5 rounded hover:bg-indigo-500 hover:text-white hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all uppercase tracking-widest active:scale-95 shadow-lg"
+                        className="w-full md:w-auto md:ml-auto bg-white text-black font-black text-[10px] px-8 py-3.5 rounded hover:bg-indigo-500 hover:text-white hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all uppercase tracking-widest active:scale-95 shadow-lg"
                     >
-                        Apply Filter
+                        Apply
                     </button>
                 </div>
-                <div className="glass rounded-xl p-4 flex flex-col justify-center items-center border-indigo-500/10 group cursor-help transition-all hover:border-indigo-500/40">
+                <div className="glass rounded-xl p-4 flex flex-row md:flex-col justify-center items-center border-indigo-500/10 group cursor-help transition-all hover:border-indigo-500/40 gap-3 md:gap-0">
                     <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-tighter">STATUS</div>
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)] group-hover:shadow-[0_0_12px_rgba(34,197,94,1)] transition-all"></span>
@@ -180,15 +189,15 @@
 
               <div className="space-y-3">
                 {processedData.length === 0 ? (
-                    <div className="glass rounded-xl p-20 text-center text-slate-500 uppercase mono text-sm tracking-[0.3em]">No Assets Found In Range</div>
+                    <div className="glass rounded-xl p-20 text-center text-slate-500 uppercase mono text-sm tracking-[0.3em]">No Assets Found</div>
                 ) : processedData.map((item) => (
                     <div key={item.ticker} className={`glass rounded-xl p-5 card-pro overflow-hidden group ${flash ? 'animate-flash' : ''}`}>
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-center relative z-10">
                             <div className="md:col-span-2">
-                                <span className="text-3xl font-black tracking-tighter text-white group-hover:text-indigo-400 transition-all duration-300 leading-none inline-block group-hover:translate-x-1">{item.ticker}</span>
+                                <span className="text-2xl md:text-3xl font-black tracking-tighter text-white group-hover:text-indigo-400 transition-all duration-300 leading-none inline-block group-hover:translate-x-1">{item.ticker}</span>
                             </div>
 
-                            <div className="md:col-span-6 grid grid-cols-4 gap-2 border-l border-white/5 pl-6">
+                            <div className="md:col-span-6 grid grid-cols-3 md:grid-cols-4 gap-2 border-l border-white/5 pl-4 md:pl-6">
                                 <div className="flex flex-col hover:translate-y-[-2px] transition-transform">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">Price</span>
                                     <span className="text-sm font-bold text-indigo-400 mono">${item.price > 1 ? item.price.toLocaleString() : item.price.toFixed(4)}</span>
@@ -199,22 +208,22 @@
                                 </div>
                                 <div className="flex flex-col hover:translate-y-[-2px] transition-transform">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">OI</span>
-                                    <span className="text-sm font-bold text-slate-300 mono">${item.oi.toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-slate-300 mono">${item.oi >= 1000000 ? (item.oi/1000000).toFixed(1) + 'M' : item.oi.toLocaleString()}</span>
                                 </div>
-                                <div className="flex flex-col hover:translate-y-[-2px] transition-transform">
+                                <div className="hidden md:flex flex-col hover:translate-y-[-2px] transition-transform">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">Volume</span>
-                                    <span className="text-sm font-bold text-slate-300 mono">${item.vol.toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-slate-300 mono">${item.vol >= 1000000 ? (item.vol/1000000).toFixed(1) + 'M' : item.vol.toLocaleString()}</span>
                                 </div>
                             </div>
 
-                            <div className="md:col-span-4 flex flex-col items-end justify-center">
-                                <div className="flex flex-col items-end mb-2 group-hover:scale-105 transition-transform duration-300 origin-right">
+                            <div className="md:col-span-4 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
+                                <div className="flex flex-col items-start md:items-end mb-0 md:mb-2 group-hover:scale-105 transition-transform duration-300 origin-right">
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Alpha Score</span>
-                                    <span className={`text-4xl font-black mono leading-none tracking-tighter transition-colors duration-500 ${getScoreColor(item.intensity)}`}>
+                                    <span className={`text-3xl md:text-4xl font-black mono leading-none tracking-tighter transition-colors duration-500 ${getScoreColor(item.intensity)}`}>
                                         {item.alphaScore.toFixed(0)}
                                     </span>
                                 </div>
-                                <div className="w-full max-w-[160px] h-1 bg-white/5 rounded-full overflow-hidden">
+                                <div className="w-24 md:w-full md:max-w-[160px] h-1 bg-white/5 rounded-full overflow-hidden">
                                     <div 
                                         className={`h-full transition-all duration-1000 ${item.intensity > 80 ? 'bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.8)]' : 'bg-indigo-500'}`}
                                         style={{ width: `${item.intensity}%` }}
