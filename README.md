@@ -6,7 +6,7 @@
 
 - **Alpha Scoring Engine**: Automatically calculates asset efficiency. High scores indicate tickers with low liquidity (wide spreads) relative to their open interest—prime targets for market-making or contrarian strategies.
 
-- **Smart Liquidity Filtering**: Real-time volume range controls to filter.
+- **Smart Liquidity Filtering**: Real-time spread range controls to filter.
 
 - **Visual Intensity Bars**: Instant visual recognition of market heat via dynamic progress bars and radial glow effects.
 
@@ -31,9 +31,9 @@
 
 ## How to Use
 
-- **Set Volume**: Use the Min/Max Vol inputs to define your trading universe (e.g., $500k to $20M).
+- **Set Volume**: Use the Min/Max spread inputs to define your trading universe.
 
-- **Identify Efficiency**: Look for tickers with an Alpha Score above 100. These are currently experiencing high "Trading Intensity" relative to their spread.
+- **Identify Efficiency**: Look for tickers with a high Alpha Score. These are currently experiencing high "Trading Intensity" relative to their spread.
 
 ## License
 This project is licensed under the **MIT License**.
