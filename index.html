@@ -22,7 +22,6 @@
         .mono { font-family: 'JetBrains Mono', monospace; }
         .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         
-        /* ✨ Card Hover Depth */
         .card-pro { 
             position: relative; 
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
@@ -35,7 +34,6 @@
             box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5), 0 0 15px rgba(99, 102, 241, 0.1);
         }
 
-        /* ✨ Title Interaction */
         .text-gradient-custom { 
             background: linear-gradient(to bottom right, #ffffff 20%, #818cf8 50%, #4f46e5 100%); 
             -webkit-background-clip: text; 
@@ -48,7 +46,6 @@
             transform: scale(1.02);
         }
         
-        /* ✨ Filter Field Hover */
         .filter-field {
             transition: all 0.3s ease;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -70,23 +67,103 @@
 
         .scanline { width: 100%; height: 2px; background: rgba(99, 102, 241, 0.1); position: absolute; animation: scan 4s linear infinite; pointer-events: none; }
         @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        
+        .swipe-actions {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            z-index: 20;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.95), rgba(99, 102, 241, 0.95));
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .swipe-actions.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(100px, -100px); }
+            50% { transform: translate(-50px, -200px); }
+            75% { transform: translate(-100px, -100px); }
+        }
     </style>
 </head>
 <body>
+    <div class="particles">
+        <div class="particle" style="left: 10%; top: 20%; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 80%; top: 30%; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 50%; top: 60%; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 20%; top: 80%; animation-delay: 6s;"></div>
+        <div class="particle" style="left: 70%; top: 10%; animation-delay: 8s;"></div>
+        <div class="particle" style="left: 40%; top: 40%; animation-delay: 10s;"></div>
+        <div class="particle" style="left: 90%; top: 70%; animation-delay: 12s;"></div>
+        <div class="particle" style="left: 15%; top: 50%; animation-delay: 14s;"></div>
+    </div>
     <div id="root"></div>
     
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
+
+        const AnimatedNumber = ({ value, decimals = 0, prefix = "", suffix = "" }) => {
+          const [displayValue, setDisplayValue] = useState(value);
+          const prevValue = useRef(value);
+
+          useEffect(() => {
+            if (prevValue.current === value) return;
+            const start = prevValue.current;
+            const end = value;
+            const duration = 800;
+            const startTime = Date.now();
+
+            const animate = () => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const eased = 1 - Math.pow(1 - progress, 3);
+              const current = start + (end - start) * eased;
+              setDisplayValue(current);
+
+              if (progress < 1) requestAnimationFrame(animate);
+              else prevValue.current = end;
+            };
+            requestAnimationFrame(animate);
+          }, [value]);
+
+          const formatted = decimals > 0 ? displayValue.toFixed(decimals) : Math.round(displayValue).toLocaleString();
+          return <span>{prefix}{formatted}{suffix}</span>;
+        };
 
         const Dashboard = () => {
           const [rawListings, setRawListings] = useState([]);
           const [loading, setLoading] = useState(true);
           const [lastUpdate, setLastUpdate] = useState(null);
           const [flash, setFlash] = useState(false);
-          const [inputMin, setInputMin] = useState(100);
-          const [inputMax, setInputMax] = useState(10000000);
+          const [inputMin, setInputMin] = useState(0.001);
+          const [inputMax, setInputMax] = useState(1);
           const [searchTerm, setSearchTerm] = useState("");
           const [activeRange, setActiveRange] = useState({ min: inputMin, max: inputMax });
+          const [touchStart, setTouchStart] = useState(null);
+          const [touchEnd, setTouchEnd] = useState(null);
+          const [swipedItem, setSwipedItem] = useState(null);
 
           const fetchData = async () => {
             setLoading(true);
@@ -119,15 +196,19 @@
                 return { ticker: l.ticker, vol, oi, spread, price, alphaScore };
               })
               .filter(i => 
-                i.vol >= activeRange.min && 
-                i.vol <= activeRange.max &&
+                i.oi > 100 &&
+                i.spread >= activeRange.min && 
+                i.spread <= activeRange.max &&
                 i.ticker.toLowerCase().includes(searchTerm.toLowerCase())
               )
-              .sort((a, b) => b.alphaScore - a.alphaScore)
-              .slice(0, 10);
+              .sort((a, b) => b.alphaScore - a.alphaScore);
 
+            const top10 = data.slice(0, 10);
             const maxAlpha = data.length > 0 ? data[0].alphaScore : 1;
-            return data.map(item => ({...item, intensity: (item.alphaScore / maxAlpha) * 100}));
+            return {
+              top10: top10.map(item => ({...item, intensity: (item.alphaScore / maxAlpha) * 100})),
+              all: data.map(item => ({...item, intensity: (item.alphaScore / maxAlpha) * 100}))
+            };
           }, [rawListings, activeRange, searchTerm]);
 
           const getScoreColor = (intensity) => {
@@ -136,8 +217,28 @@
               return "text-slate-400";
           };
 
+          const handleTouchStart = (e) => {
+            setTouchEnd(null);
+            setTouchStart(e.targetTouches[0].clientX);
+          };
+
+          const handleTouchMove = (e) => {
+            setTouchEnd(e.targetTouches[0].clientX);
+          };
+
+          const handleTouchEnd = (ticker) => {
+            if (!touchStart || !touchEnd) return;
+            const distance = touchStart - touchEnd;
+            const isLeftSwipe = distance > 50;
+            const isRightSwipe = distance < -50;
+
+            if (isLeftSwipe || isRightSwipe) {
+              setSwipedItem(swipedItem === ticker ? null : ticker);
+            }
+          };
+
           return (
-            <div className="max-w-[1100px] mx-auto p-4 md:p-12">
+            <div className="max-w-[1100px] mx-auto p-4 md:p-12 relative z-10">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 border-b border-white/5 pb-8">
                 <div className="title-container cursor-default transition-transform duration-300">
                     <div className="flex items-center gap-3 mb-2">
@@ -153,6 +254,11 @@
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
                   </div>
+                  <div className="glass rounded px-3 py-1">
+                    <span className="text-[9px] font-black text-cyan-400 mono uppercase tracking-wider">
+                      {processedData.all.length} Assets
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -164,12 +270,12 @@
                         <input type="text" placeholder="" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 placeholder:text-slate-700 transition-colors uppercase" />
                     </div>
                     <div className="flex flex-col filter-field px-2 py-1 rounded w-[45%] md:w-auto">
-                        <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Min Vol (USD)</label>
-                        <input type="number" value={inputMin} onChange={e => setInputMin(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 transition-colors" />
+                        <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Min Spread (%)</label>
+                        <input type="number" step="0.001" value={inputMin} onChange={e => setInputMin(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 transition-colors" />
                     </div>
                     <div className="flex flex-col filter-field px-2 py-1 rounded w-[45%] md:w-auto">
-                        <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Max Vol (USD)</label>
-                        <input type="number" value={inputMax} onChange={e => setInputMax(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 transition-colors" />
+                        <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Max Spread (%)</label>
+                        <input type="number" step="0.001" value={inputMax} onChange={e => setInputMax(Number(e.target.value))} className="bg-transparent text-white mono text-lg outline-none w-full md:w-32 transition-colors" />
                     </div>
                     <button 
                         onClick={() => setActiveRange({ min: inputMin, max: inputMax })} 
@@ -188,10 +294,31 @@
               </div>
 
               <div className="space-y-3">
-                {processedData.length === 0 ? (
+                {processedData.top10.length === 0 ? (
                     <div className="glass rounded-xl p-20 text-center text-slate-500 uppercase mono text-sm tracking-[0.3em]">No Assets Found</div>
-                ) : processedData.map((item) => (
-                    <div key={item.ticker} className={`glass rounded-xl p-5 card-pro overflow-hidden group ${flash ? 'animate-flash' : ''}`}>
+                ) : processedData.top10.map((item, idx) => (
+                    <div 
+                      key={item.ticker} 
+                      className={`glass rounded-xl p-5 card-pro overflow-hidden group relative ${flash ? 'animate-flash' : ''}`}
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={() => handleTouchEnd(item.ticker)}
+                    >
+                        <div className={`swipe-actions ${swipedItem === item.ticker ? 'active' : ''}`}>
+                          <button 
+                            onClick={() => setSwipedItem(null)}
+                            className="text-white font-black text-sm uppercase px-6 py-3 bg-cyan-500 rounded-lg active:scale-95 shadow-lg"
+                          >
+                            ⭐ Watch
+                          </button>
+                          <button 
+                            onClick={() => setSwipedItem(null)}
+                            className="text-white font-black text-sm uppercase px-6 py-3 bg-slate-700 rounded-lg active:scale-95 shadow-lg"
+                          >
+                            📊 Details
+                          </button>
+                        </div>
+                        
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-center relative z-10">
                             <div className="md:col-span-2">
                                 <span className="text-2xl md:text-3xl font-black tracking-tighter text-white group-hover:text-indigo-400 transition-all duration-300 leading-none inline-block group-hover:translate-x-1">{item.ticker}</span>
@@ -200,19 +327,31 @@
                             <div className="md:col-span-6 grid grid-cols-3 md:grid-cols-4 gap-2 border-l border-white/5 pl-4 md:pl-6">
                                 <div className="flex flex-col hover:translate-y-[-2px] transition-transform">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">Price</span>
-                                    <span className="text-sm font-bold text-indigo-400 mono">${item.price > 1 ? item.price.toLocaleString() : item.price.toFixed(4)}</span>
+                                    <span className="text-sm font-bold text-indigo-400 mono">
+                                      <AnimatedNumber 
+                                        value={item.price} 
+                                        decimals={item.price >= 1000 ? 0 : item.price >= 1 ? 2 : item.price >= 0.01 ? 4 : 6} 
+                                        prefix="$" 
+                                      />
+                                    </span>
                                 </div>
                                 <div className="flex flex-col hover:translate-y-[-2px] transition-transform">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">Spread</span>
-                                    <span className="text-sm font-bold text-slate-300 mono">{item.spread.toFixed(4)}%</span>
+                                    <span className="text-sm font-bold text-slate-300 mono">
+                                      <AnimatedNumber value={item.spread} decimals={4} suffix="%" />
+                                    </span>
                                 </div>
                                 <div className="flex flex-col hover:translate-y-[-2px] transition-transform">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">OI</span>
-                                    <span className="text-sm font-bold text-slate-300 mono">${item.oi >= 1000000 ? (item.oi/1000000).toFixed(1) + 'M' : item.oi.toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-slate-300 mono">
+                                      ${item.oi >= 1000000 ? <><AnimatedNumber value={item.oi/1000000} decimals={1} />M</> : <AnimatedNumber value={item.oi} decimals={0} />}
+                                    </span>
                                 </div>
                                 <div className="hidden md:flex flex-col hover:translate-y-[-2px] transition-transform">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase mb-1">Volume</span>
-                                    <span className="text-sm font-bold text-slate-300 mono">${item.vol >= 1000000 ? (item.vol/1000000).toFixed(1) + 'M' : item.vol.toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-slate-300 mono">
+                                      ${item.vol >= 1000000 ? <><AnimatedNumber value={item.vol/1000000} decimals={1} />M</> : <AnimatedNumber value={item.vol} decimals={0} />}
+                                    </span>
                                 </div>
                             </div>
 
@@ -220,7 +359,7 @@
                                 <div className="flex flex-col items-start md:items-end mb-0 md:mb-2 group-hover:scale-105 transition-transform duration-300 origin-right">
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Alpha Score</span>
                                     <span className={`text-3xl md:text-4xl font-black mono leading-none tracking-tighter transition-colors duration-500 ${getScoreColor(item.intensity)}`}>
-                                        {item.alphaScore.toFixed(0)}
+                                        <AnimatedNumber value={item.alphaScore} decimals={0} />
                                     </span>
                                 </div>
                                 <div className="w-24 md:w-full md:max-w-[160px] h-1 bg-white/5 rounded-full overflow-hidden">
